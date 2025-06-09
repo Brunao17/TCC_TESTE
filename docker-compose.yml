@@ -1,0 +1,17 @@
+# docker-compose.yml (na raiz do projeto unilar-app)
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13 # Ou a versão mais recente que desejar
+    restart: always
+    environment:
+      POSTGRES_USER: unilar_user
+      POSTGRES_PASSWORD: yoursecurepassword # Mude isso!
+      POSTGRES_DB: unilar_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

@@ -1,0 +1,287 @@
+/* style.css */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    line-height: 1.6;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+header {
+    background: #3A7CA5; /* Azul Principal */
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    border-bottom: #16425B 3px solid; /* Azul Escuro */
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+header nav {
+    margin-top: 10px;
+}
+
+header nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 15px;
+    font-size: 1.1rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+header nav a:hover, header nav a.active {
+    background-color: #D96C06; /* Laranja */
+}
+
+main {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.search-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #e9ecef;
+    border-radius: 8px;
+}
+
+.search-section input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.search-section button {
+    padding: 10px 20px;
+    background-color: #D96C06; /* Laranja */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.search-section button:hover {
+    background-color: #b85a05;
+}
+
+.results-section {
+    display: flex;
+    gap: 20px;
+    /* Para desktop, lado a lado. Em telas menores, empilhar (precisa de media query) */
+}
+
+#map {
+    height: 500px;
+    width: 60%; /* Ajuste conforme necessário */
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+#listingsContainer {
+    width: 40%; /* Ajuste conforme necessário */
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+#listingsContainer h2 {
+    margin-top: 0;
+    color: #16425B;
+}
+
+.listing-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: box-shadow 0.3s ease;
+}
+
+.listing-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.listing-card h3 {
+    margin-top: 0;
+    color: #3A7CA5;
+}
+
+.listing-card p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.listing-card .price {
+    font-weight: bold;
+    color: #D96C06;
+    font-size: 1.1rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* 10% from the top and centered */
+    padding: 25px;
+    border: 1px solid #888;
+    width: 70%; /* Could be more or less, depending on screen size */
+    max-width: 700px;
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-photos {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    overflow-x: auto; /* Para caso de muitas fotos */
+}
+
+.modal-photos img {
+    max-width: 150px; /* Ou ajuste conforme o design */
+    max-height: 100px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: #16425B;
+}
+
+.modal-content p {
+    margin-bottom: 10px;
+}
+
+.whatsapp-button {
+    display: inline-block;
+    background-color: #25D366;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.whatsapp-button:hover {
+    background-color: #1EBE57;
+}
+
+
+/* Form Page Styles */
+.form-page {
+    padding: 20px;
+}
+.form-page h2 {
+    text-align: center;
+    color: #16425B;
+    margin-bottom: 25px;
+}
+#addListingForm {
+    max-width: 700px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #333;
+}
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="tel"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important for padding not to expand width */
+    font-size: 1rem;
+}
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #666;
+}
+#addListingForm button[type="submit"] {
+    background-color: #D96C06;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    display: block;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+#addListingForm button[type="submit"]:hover {
+    background-color: #b85a05;
+}
+
+
+footer {
+    text-align: center;
+    padding: 20px;
+    background: #16425B; /* Azul Escuro */
+    color: #f4f4f4;
+    margin-top: 30px;
+}

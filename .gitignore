@@ -1,0 +1,28 @@
+# Dependências do Node.js
+node_modules/
+
+# Arquivos de log
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Arquivos de ambiente (contêm segredos!)
+.env
+.env.*
+!.env.example 
+# (O !.env.example é para permitir um arquivo de exemplo, se você tiver um)
+
+# Arquivos de build (se você tiver um processo de build)
+# build/
+# dist/
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de IDEs (opcional, mas bom)
+.vscode/
+# .idea/ (para IntelliJ/WebStorm)

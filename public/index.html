@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniLar - Encontre sua Moradia Universitária</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>UniLar</h1>
+        <nav>
+            <a href="index.html">Encontrar Moradia</a>
+            <a href="add-listing.html">Anunciar Vaga</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="search-section">
+            <input type="text" id="searchInput" placeholder="Digite a universidade ou região...">
+            <button id="searchButton">Buscar</button>
+        </section>
+
+        <section class="results-section">
+            <div id="map"></div>
+            <div id="listingsContainer">
+                <h2>Moradias Disponíveis</h2>
+                <!-- Cards de moradia serão inseridos aqui pelo JavaScript -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Detalhes da Moradia -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2 id="modalTitle">Título da Moradia</h2>
+            <div class="modal-photos">
+                <!-- Fotos serão inseridas aqui -->
+            </div>
+            <p><strong>Endereço:</strong> <span id="modalAddress"></span></p>
+            <p><strong>Universidade Próxima:</strong> <span id="modalUniversity"></span></p>
+            <p><strong>Preço:</strong> R$ <span id="modalPrice"></span> / mês por pessoa</p>
+            <p><strong>Total de Moradores:</strong> <span id="modalTotalPeople"></span></p>
+            <p><strong>Vagas Disponíveis:</strong> <span id="modalAvailableSpots"></span></p>
+            <p><strong>Distância até a Faculdade:</strong> <span id="modalDistance"></span></p>
+            <p><strong>Comodidades:</strong> <span id="modalAmenities"></span></p>
+            <p><strong>Descrição:</strong></p>
+            <p id="modalDescription"></p>
+            <a id="modalWhatsappLink" href="#" target="_blank" class="whatsapp-button">
+                Entrar em contato via WhatsApp
+            </a>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 UniLar. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- <script src="data.js"></script> -->
+    <script defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUZO2xZrWtc30bMq9EIJ22rcGmjgypx7k&callback=initMap&libraries=marker"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>

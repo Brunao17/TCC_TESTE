@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UniLar - Anunciar Vaga</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>UniLar</h1>
+        <nav>
+            <a href="index.html">Encontrar Moradia</a>
+            <a href="add-listing.html">Anunciar Vaga</a>
+        </nav>
+    </header>
+
+    <main class="form-page">
+        <h2>Anuncie sua República ou Apartamento</h2>
+        <form id="addListingForm">
+            <div class="form-group">
+                <label for="titulo">Título do Anúncio:</label>
+                <input type="text" id="titulo" name="titulo" required>
+            </div>
+            <div class="form-group">
+                <label for="tipo">Tipo de Moradia:</label>
+                <select id="tipo" name="tipo" required>
+                    <option value="republica">República</option>
+                    <option value="apartamento">Apartamento</option>
+                    <option value="casa">Casa</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="endereco">Endereço Completo:</label>
+                <input type="text" id="endereco" name="endereco" required>
+            </div>
+            <div class="form-group">
+                <label for="universidade">Universidade(s) Próxima(s):</label>
+                <input type="text" id="universidade" name="universidade" required>
+            </div>
+            <div class="form-group">
+                <label for="latitude">Latitude (Ex: -23.550520):</label>
+                <input type="text" id="latitude" name="latitude" placeholder="Opcional, para precisão no mapa" >
+            </div>
+            <div class="form-group">
+                <label for="longitude">Longitude (Ex: -46.633308):</label>
+                <input type="text" id="longitude" name="longitude" placeholder="Opcional, para precisão no mapa" >
+            </div>
+            <div class="form-group">
+                <label for="preco">Preço do Aluguel (por pessoa): R$</label>
+                <input type="number" id="preco" name="preco" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="pessoasTotal">Número Total de Moradores no Local:</label>
+                <input type="number" id="pessoasTotal" name="pessoasTotal" required>
+            </div>
+            <div class="form-group">
+                <label for="vagasDisponiveis">Número de Vagas Disponíveis:</label>
+                <input type="number" id="vagasDisponiveis" name="vagasDisponiveis" required>
+            </div>
+            <div class="form-group">
+                <label for="distanciaFaculdade">Distância até a Faculdade (Ex: 500m, 1.2km):</label>
+                <input type="text" id="distanciaFaculdade" name="distanciaFaculdade">
+            </div>
+            <div class="form-group">
+                <label for="descricao">Descrição Detalhada:</label>
+                <textarea id="descricao" name="descricao" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="fotos">URLs das Fotos (separadas por vírgula):</label>
+                <input type="text" id="fotos" name="fotos" placeholder="https://link.com/foto1.jpg, https://link.com/foto2.jpg">
+            </div>
+            <div class="form-group">
+                <label for="comodidades">Comodidades (separadas por vírgula):</label>
+                <input type="text" id="comodidades" name="comodidades" placeholder="Wi-Fi, Cozinha Equipada, etc.">
+            </div>
+            <div class="form-group">
+                <label for="contatoNome">Seu Nome para Contato:</label>
+                <input type="text" id="contatoNome" name="contatoNome" required>
+            </div>
+            <div class="form-group">
+                <label for="contatoWhatsapp">Seu WhatsApp (com DDD, Ex: 5511912345678):</label>
+                <input type="tel" id="contatoWhatsapp" name="contatoWhatsapp" pattern="[0-9]{12,13}" placeholder="5511912345678" required>
+                 <small>Formato: código do país (55) + DDD + número.</small>
+            </div>
+
+            <button type="submit">Cadastrar Moradia</button>
+        </form>
+    </main>
+
+    <footer>
+        <p>© 2023 UniLar. Todos os direitos reservados.</p>
+    </footer>
+    <script>
+        document.getElementById('addListingForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Impede o envio padrão do formulário
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Converte strings de fotos e comodidades em arrays se necessário (o backend também faz isso, mas é bom ter aqui)
+            if (data.fotos) data.fotos = data.fotos.split(',').map(item => item.trim()).filter(item => item);
+            else data.fotos = [];
+
+            if (data.comodidades) data.comodidades = data.comodidades.split(',').map(item => item.trim()).filter(item => item);
+            else data.comodidades = [];
+            
+            // Converte números para o tipo correto, se necessário
+            data.preco = parseFloat(data.preco);
+            data.pessoasTotal = parseInt(data.pessoasTotal);
+            data.vagasDisponiveis = parseInt(data.vagasDisponiveis);
+            if (data.latitude) data.latitude = parseFloat(data.latitude);
+            if (data.longitude) data.longitude = parseFloat(data.longitude);
+
+
+            console.log("Enviando dados do formulário:", data);
+
+            try {
+                const response = await fetch('/api/moradias', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log("Resposta do servidor:", result);
+                alert(result.message || "Moradia cadastrada com sucesso!");
+                event.target.reset(); // Limpa o formulário
+                // Opcional: redirecionar para a página inicial ou de confirmação
+                // window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Erro ao cadastrar moradia:", error);
+                alert("Erro ao cadastrar moradia: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

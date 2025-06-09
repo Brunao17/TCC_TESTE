@@ -1,0 +1,70 @@
+// data.js
+const moradiasDB = [
+    {
+        id: 1,
+        titulo: "República Sol Nascente",
+        tipo: "República",
+        endereco: "Rua das Palmeiras, 123, Cidade Universitária",
+        universidade: "Universidade Federal Exemplo (UFE)",
+        latitude: -23.550520, // Coordenadas de exemplo (São Paulo)
+        longitude: -46.633308,
+        preco: 550.00,
+        pessoasTotal: 6,
+        vagasDisponiveis: 2,
+        distanciaFaculdade: "500m",
+        descricao: "República mista, ambiente tranquilo e focado nos estudos. Próximo a ponto de ônibus e supermercado.",
+        fotos: ["https://via.placeholder.com/400x300.png?text=Foto+1", "https://via.placeholder.com/400x300.png?text=Foto+2"],
+        comodidades: ["Wi-Fi", "Cozinha Equipada", "Máquina de Lavar", "Mobiliado"],
+        contatoNome: "João Silva",
+        contatoWhatsapp: "5511912345678" // Formato: 55 + DDD + Numero
+    },
+    {
+        id: 2,
+        titulo: "Apartamento Central Aconchegante",
+        tipo: "Apartamento",
+        endereco: "Av. Principal, 789, Centro",
+        universidade: "Universidade Estadual Modelo (UEM)",
+        latitude: -23.561332,
+        longitude: -46.656261,
+        preco: 700.00,
+        pessoasTotal: 3,
+        vagasDisponiveis: 1,
+        distanciaFaculdade: "1.2km",
+        descricao: "Apartamento para dividir com mais duas meninas. Ambiente organizado e limpo. Ótima localização.",
+        fotos: ["https://via.placeholder.com/400x300.png?text=Apto+Foto+1"],
+        comodidades: ["Wi-Fi", "Portaria 24h", "Elevador"],
+        contatoNome: "Maria Oliveira",
+        contatoWhatsapp: "5521987654321"
+    },
+    {
+        id: 3,
+        titulo: "Casa dos Calouros",
+        tipo: "Casa",
+        endereco: "Travessa dos Estudantes, 45, Bairro Acadêmico",
+        universidade: "Universidade Federal Exemplo (UFE)",
+        latitude: -23.548975,
+        longitude: -46.638690,
+        preco: 480.00,
+        pessoasTotal: 8,
+        vagasDisponiveis: 3,
+        distanciaFaculdade: "800m",
+        descricao: "Casa grande e animada, perfeita para fazer amigos. Churrasqueira e área de convivência.",
+        fotos: ["https://via.placeholder.com/400x300.png?text=Casa+Foto+1", "https://via.placeholder.com/400x300.png?text=Casa+Foto+2"],
+        comodidades: ["Wi-Fi", "Cozinha Completa", "Área de Serviço", "Quintal"],
+        contatoNome: "Carlos Pereira",
+        contatoWhatsapp: "5531999998888"
+    }
+];
+
+// Função para simular busca (pode ser expandida)
+function buscarMoradias(termo) {
+    if (!termo || termo.trim() === "") {
+        return moradiasDB;
+    }
+    const termoLower = termo.toLowerCase();
+    return moradiasDB.filter(moradia =>
+        moradia.titulo.toLowerCase().includes(termoLower) ||
+        moradia.universidade.toLowerCase().includes(termoLower) ||
+        moradia.endereco.toLowerCase().includes(termoLower)
+    );
+}
