@@ -2,27 +2,23 @@
 
 // Variável global para o mapa e marcadores
 let map;
-let markers = [];
+let gMarkers = []; // Renomeado para evitar conflito
 let allMoradias = []; // Para guardar todas as moradias e filtrar no cliente
-let infoWindow; // Janela de informações do Google Maps
+let gInfoWindow; // Renomeado para evitar conflito
 
 // Função de inicialização do mapa, chamada pelo callback da API do Google Maps
 async function initMap() {
     console.log("Função initMap foi chamada globalmente!");
     const mapElement = document.getElementById('map');
-    if (!mapElement) return; // Sai se o elemento do mapa não existir
+    if (!mapElement) return;
 
-    // Coordenadas iniciais (ex: centro de uma cidade universitária ou a primeira moradia)
     const initialPosition = { lat: -23.550520, lng: -46.633308 }; // São Paulo como padrão
-
     map = new google.maps.Map(mapElement, {
         center: initialPosition,
         zoom: 12,
     });
-
-    infoWindow = new google.maps.InfoWindow();
-
-    await fetchAndDisplayListings(); // Busca e exibe as moradias ao iniciar
+    gInfoWindow = new google.maps.InfoWindow();
+    await fetchAndDisplayListings();
 }
 
 async function fetchAndDisplayListings(searchTerm = null) {
@@ -35,8 +31,29 @@ async function fetchAndDisplayListings(searchTerm = null) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        allMoradias = await response.json();
+        
+        const resultadoDaBusca = await response.json(); 
+
+        // A lista de moradias agora está dentro da chave 'moradias'
+        allMoradias = resultadoDaBusca.moradias; 
         displayListingsOnMapAndList(allMoradias);
+
+        // Se o backend retornou coordenadas para o centro do mapa, usamos elas
+        if (resultadoDaBusca.centroDoMapa && map) {
+            const novoCentro = {
+                lat: resultadoDaBusca.centroDoMapa.lat,
+                lng: resultadoDaBusca.centroDoMapa.lng
+            };
+            console.log("Centralizando mapa em:", novoCentro);
+            map.panTo(novoCentro); // PanTo é uma animação suave
+
+            // Se houver moradias, deixamos o fitBounds ajustar o zoom.
+            // Se não houver moradias, definimos um zoom fixo para a localização.
+            if (allMoradias.length === 0) {
+                map.setZoom(14); // Zoom de bairro/cidade pequena
+            }
+        }
+
     } catch (error) {
         console.error("Erro ao buscar moradias:", error);
         const listingsContainer = document.getElementById('listingsContainer');
@@ -46,10 +63,9 @@ async function fetchAndDisplayListings(searchTerm = null) {
     }
 }
 
-
 function clearMarkers() {
-    markers.forEach(marker => marker.setMap(null)); // Remove do mapa
-    markers = [];
+    gMarkers.forEach(marker => marker.setMap(null));
+    gMarkers = [];
 }
 
 function displayListingsOnMapAndList(listings) {
@@ -57,9 +73,9 @@ function displayListingsOnMapAndList(listings) {
     if (!listingsContainer) return;
 
     clearMarkers();
-    listingsContainer.innerHTML = '<h2>Moradias Disponíveis</h2>'; // Limpa lista antiga
+    listingsContainer.innerHTML = '<h2>Moradias Disponíveis</h2>';
 
-    if (listings.length === 0) {
+    if (!listings || listings.length === 0) {
         listingsContainer.innerHTML += '<p>Nenhuma moradia encontrada com os critérios selecionados.</p>';
         return;
     }
@@ -67,39 +83,36 @@ function displayListingsOnMapAndList(listings) {
     const bounds = new google.maps.LatLngBounds();
 
     listings.forEach(moradia => {
-        // Adicionar marcador no mapa
         if (moradia.latitude && moradia.longitude) {
             const position = { lat: moradia.latitude, lng: moradia.longitude };
             const marker = new google.maps.Marker({
                 position: position,
                 map: map,
                 title: moradia.titulo,
-                // icon: 'url_para_icone_personalizado.png' // Opcional
             });
 
             marker.addListener('click', () => {
                 const content = `
                     <div>
                         <h4>${moradia.titulo}</h4>
-                        <p>R$ ${moradia.preco.toFixed(2)}</p>
+                        <p>R$ ${Number(moradia.preco).toFixed(2)}</p>
                         <button onclick='openDetailModalById(${moradia.id})'>Ver Detalhes</button>
                     </div>`;
-                infoWindow.setContent(content);
-                infoWindow.open(map, marker);
-                map.panTo(marker.getPosition()); // Centraliza no marcador clicado
+                gInfoWindow.setContent(content);
+                gInfoWindow.open(map, marker);
+                map.panTo(marker.getPosition());
             });
-            markers.push(marker);
-            bounds.extend(position); // Adiciona a posição do marcador aos limites
+            gMarkers.push(marker);
+            bounds.extend(position);
         }
 
-        // Adicionar card na lista
         const card = document.createElement('div');
         card.classList.add('listing-card');
         card.innerHTML = `
             <h3>${moradia.titulo}</h3>
             <img src="${moradia.fotos && moradia.fotos.length > 0 ? moradia.fotos[0] : 'https://via.placeholder.com/100x70.png?text=Sem+Foto'}" alt="Foto de ${moradia.titulo}" style="width:100px; height:auto; float:left; margin-right:10px; border-radius:4px;">
             <p><strong>Tipo:</strong> ${moradia.tipo}</p>
-            <p><strong>Preço:</strong> <span class="price">R$ ${moradia.preco.toFixed(2)}</span> / mês</p>
+            <p><strong>Preço:</strong> <span class="price">R$ ${Number(moradia.preco).toFixed(2)}</span> / mês</p>
             <p><strong>Vagas:</strong> ${moradia.vagasDisponiveis} de ${moradia.pessoasTotal}</p>
             <p><strong>Próximo a:</strong> ${moradia.universidade}</p>
             <div style="clear:both;"></div>
@@ -108,26 +121,17 @@ function displayListingsOnMapAndList(listings) {
         listingsContainer.appendChild(card);
     });
 
-    // Ajustar o zoom do mapa para mostrar todos os marcadores
-    if (markers.length > 0 && !bounds.isEmpty()) {
+    if (gMarkers.length > 0 && !bounds.isEmpty()) {
         map.fitBounds(bounds);
-        // Se houver apenas um marcador, o fitBounds pode dar um zoom excessivo.
-        if (markers.length === 1) {
-            map.setZoom(15); // Ajuste este valor conforme necessário
+        if (gMarkers.length === 1) {
+            map.setZoom(15);
         }
-    } else if (markers.length === 0 && listings.length > 0 && listings[0].latitude && listings[0].longitude) {
-        // Se nenhuma moradia tiver lat/lng, mas houver moradias, centraliza na primeira se tiver coords
-         map.setCenter({ lat: listings[0].latitude, lng: listings[0].longitude });
-         map.setZoom(14);
     } else {
-        // Se não houver marcadores, centraliza no local padrão
         map.setCenter({ lat: -23.550520, lng: -46.633308 });
         map.setZoom(12);
     }
 }
 
-// Função para abrir o modal pelo ID (usada pelo InfoWindow do mapa)
-// Certifique-se que allMoradias está populado e acessível globalmente
 function openDetailModalById(moradiaId) {
     const moradia = allMoradias.find(m => m.id === moradiaId);
     if (moradia) {
@@ -137,9 +141,8 @@ function openDetailModalById(moradiaId) {
     }
 }
 
-
 function showDetailModal(moradia) {
-    console.log("showDetailModal chamada com moradia:", moradia); // LOG 7 (para depuração)
+    console.log("Objeto 'moradia' recebido por showDetailModal:", moradia);
     if (!moradia) {
         console.error("showDetailModal chamada com moradia indefinida!");
         return;
@@ -157,18 +160,17 @@ function showDetailModal(moradia) {
     const modalAmenities = document.getElementById('modalAmenities');
     const modalDescription = document.getElementById('modalDescription');
     const modalWhatsappLink = document.getElementById('modalWhatsappLink');
+    const usuarioLogado = JSON.parse(localStorage.getItem('usuario'));
+    
 
-    // Verificar se todos os elementos do modal existem
-    if (!detailModal || !modalTitle || !modalPhotosContainer || !modalAddress || !modalUniversity || 
-        !modalPrice || !modalTotalPeople || !modalAvailableSpots || !modalDistance || !modalAmenities || 
-        !modalDescription || !modalWhatsappLink) {
-        console.error("Um ou mais elementos do modal não foram encontrados no DOM!"); // LOG 8/9
+    if (!detailModal) {
+        console.error("Um ou mais elementos do modal não foram encontrados no DOM!");
         return;
     }
 
     modalTitle.textContent = moradia.titulo || "Detalhes da Moradia";
     
-    modalPhotosContainer.innerHTML = ''; // Limpa fotos anteriores
+    modalPhotosContainer.innerHTML = '';
     if (moradia.fotos && moradia.fotos.length > 0) {
         moradia.fotos.forEach(fotoUrl => {
             const img = document.createElement('img');
@@ -185,7 +187,6 @@ function showDetailModal(moradia) {
 
     modalAddress.textContent = moradia.endereco || 'Não informado';
     modalUniversity.textContent = moradia.universidade || 'Não informado';
-    // Adicionando verificação para 'preco' antes de toFixed
     modalPrice.textContent = (moradia.preco != null) ? Number(moradia.preco).toFixed(2) : 'Não informado';
     modalTotalPeople.textContent = (moradia.pessoasTotal != null) ? moradia.pessoasTotal : 'Não informado';
     modalAvailableSpots.textContent = (moradia.vagasDisponiveis != null) ? moradia.vagasDisponiveis : 'Não informado';
@@ -194,17 +195,15 @@ function showDetailModal(moradia) {
     modalDescription.textContent = moradia.descricao || 'Não informado';
 
     if (moradia.contatoWhatsapp) {
-        // Adicionando verificação para 'contatoNome'
         const nomeContato = moradia.contatoNome || '';
         const tituloMoradia = moradia.titulo || '';
         const numeroLimpo = String(moradia.contatoWhatsapp).replace(/[^0-9+]/g, '');
         modalWhatsappLink.href = `https://wa.me/${numeroLimpo}?text=${encodeURIComponent(`Olá, ${nomeContato}! Tenho interesse na vaga em "${tituloMoradia}" que vi no UniLar.`)}`;
         modalWhatsappLink.style.display = 'inline-block';
     } else {
-        modalWhatsappLink.style.display = 'none';
+        if(modalWhatsappLink) modalWhatsappLink.style.display = 'none';
     }
 
-    // Container para botões de ação no modal (incluindo o de excluir)
     let actionButtonsContainer = document.getElementById('modalActionButtons');
     if (!actionButtonsContainer) {
         actionButtonsContainer = document.createElement('div');
@@ -215,81 +214,103 @@ function showDetailModal(moradia) {
         actionButtonsContainer.style.display = 'flex';
         actionButtonsContainer.style.justifyContent = 'flex-end';
         
-        // Adiciona o container de botões antes do link do WhatsApp se ele existir, senão no final
         const modalContentDiv = detailModal.querySelector('.modal-content');
-        if (modalContentDiv) { // Garante que modal-content exista
-            if (modalWhatsappLink.parentNode === modalContentDiv) { // Verifica se o pai do link é o modal-content
+        if (modalContentDiv) {
+            if (modalWhatsappLink && modalWhatsappLink.parentNode === modalContentDiv) {
                  modalContentDiv.insertBefore(actionButtonsContainer, modalWhatsappLink);
             } else {
                  modalContentDiv.appendChild(actionButtonsContainer);
             }
-        } else {
-            console.error("Div .modal-content não encontrada para adicionar botões de ação.");
         }
     }
-    actionButtonsContainer.innerHTML = ''; // Limpa botões anteriores
+    actionButtonsContainer.innerHTML = '';
+
+    // ***** ALTERAÇÃO: LÓGICA DO BOTÃO DE EXCLUIR *****
     
-    // Descomente quando deleteMoradia estiver pronta e o backend também
-    const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Excluir Moradia';
-    deleteButton.classList.add('delete-button'); // Para estilização
-    deleteButton.style.backgroundColor = '#dc3545';
-    deleteButton.style.color = 'white';
-    deleteButton.style.padding = '10px 15px';
-    deleteButton.style.border = 'none';
-    deleteButton.style.borderRadius = '5px';
-    deleteButton.style.cursor = 'pointer';
-    // deleteButton.style.marginLeft = '10px'; // Se houver outros botões
 
-    deleteButton.addEventListener('click', () => {
-        // A confirmação principal agora está dentro da função deleteMoradia,
-        // mas uma confirmação inicial aqui também não faz mal, ou remova esta.
-        // if (confirm(`Tem certeza que deseja excluir a moradia "${moradia.titulo || 'esta moradia'}"?`)) {
-            deleteMoradia(moradia.id, moradia.titulo || 'esta moradia');
-        // }
-    });
-    actionButtonsContainer.appendChild(deleteButton);
+    // Só mostra o botão se o usuário estiver logado E for o dono da moradia
+    if (usuarioLogado && moradia.usuario_id == usuarioLogado.id || usuarioLogado.role === 'admin') {
+        const deleteButton = document.createElement('button');
+        const idParaDeletar = moradia.id;
+        const tituloParaDeletar = moradia.titulo || 'esta moradia';
+        deleteButton.textContent = 'Excluir Moradia';
+        deleteButton.classList.add('delete-button');
+        deleteButton.style.backgroundColor = '#dc3545';
+        deleteButton.style.color = 'white';
+        deleteButton.style.padding = '10px 15px';
+        deleteButton.style.border = 'none';
+        deleteButton.style.borderRadius = '5px';
+        deleteButton.style.cursor = 'pointer';
+        console.log(`Configurando listener de exclusão para ID: ${idParaDeletar}`);
+        
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Editar';
+        editButton.classList.add('edit-button'); 
+        editButton.style.backgroundColor = '#007bff'; // Azul
+        editButton.style.color = 'white';
+        editButton.style.padding = '10px 15px';
+        editButton.style.border = 'none';
+        editButton.style.borderRadius = '5px';
+        editButton.style.cursor = 'pointer';
 
+        editButton.addEventListener('click', () => {
+            // Redireciona para a página de anúncio, passando o ID da moradia como parâmetro na URL
+            window.location.href = `add-listing.html?id=${moradia.id}`;
+        });
+        actionButtonsContainer.appendChild(editButton);
+
+        deleteButton.addEventListener('click', () => {
+            // Chama a função deleteMoradia com a constante capturada.
+            deleteMoradia(idParaDeletar, tituloParaDeletar); 
+        });
+        
+        actionButtonsContainer.appendChild(deleteButton);
+    }   else {
+            // Garante que o container de botões esteja vazio se não for o dono
+            let actionButtonsContainer = document.getElementById('modalActionButtons');
+            if (actionButtonsContainer) {
+                actionButtonsContainer.innerHTML = '';
+            }
+    }
+    
     detailModal.style.display = 'block';
 }
 
+// ***** ALTERAÇÃO: FUNÇÃO DELETE COM TOKEN *****
+async function deleteMoradia(moradiaId, moradiaTitulo) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert("Sua sessão expirou ou você não está logado. Por favor, faça login novamente.");
+        window.location.href = 'login.html';
+        return;
+    }
 
-
-async function deleteMoradia(moradiaId, moradiaTitulo) { // Adicionamos moradiaTitulo para a mensagem de alerta
-    console.log(`Tentando excluir moradia com ID: ${moradiaId}, Título: ${moradiaTitulo}`);
-    
-    // Confirmação extra, embora já haja uma no listener do botão
-    if (!confirm(`Tem certeza ABSOLUTA que deseja excluir a moradia "${moradiaTitulo}" (ID: ${moradiaId})? Esta ação não pode ser desfeita.`)) {
-        return; // Usuário cancelou
+    if (!confirm(`Tem certeza que deseja excluir a moradia "${moradiaTitulo}"? Esta ação não pode ser desfeita.`)) {
+        return;
     }
 
     try {
         const response = await fetch(`/api/moradias/${moradiaId}`, {
             method: 'DELETE',
             headers: {
-                // 'Content-Type': 'application/json', // Não é estritamente necessário para DELETE sem corpo de requisição
-                // 'Authorization': 'Bearer SEU_TOKEN_JWT' // Adicionaremos isso quando tivermos login
+                // Envia o token no cabeçalho de autorização
+                'Authorization': `Bearer ${token}`
             }
         });
 
         if (!response.ok) {
-            // Tenta ler a mensagem de erro do servidor se houver
-            let errorMessage = `Erro ao excluir moradia. Status: ${response.status}`;
-            try {
-                const errorResult = await response.json();
-                if (errorResult && errorResult.message) {
-                    errorMessage = errorResult.message;
-                }
-            } catch (e) {
-                // Se não conseguir parsear JSON, usa a mensagem padrão
-                console.warn("Não foi possível parsear a resposta de erro como JSON:", e);
+            const errorResult = await response.json();
+            if (response.status === 401 || response.status === 403) {
+                 alert("Sua sessão expirou ou você não tem permissão. Faça login novamente.");
+                 localStorage.removeItem('token');
+                 localStorage.removeItem('usuario');
+                 window.location.href = 'login.html';
             }
-            throw new Error(errorMessage);
+            throw new Error(errorResult.message || `Erro ao excluir moradia. Status: ${response.status}`);
         }
 
-        // Se a resposta for OK (200 ou 204)
         let successMessage = "Moradia excluída com sucesso!";
-        if (response.status !== 204) { // Se não for "No Content", tenta ler a mensagem
+        if (response.status !== 204) {
             try {
                 const result = await response.json();
                 if (result && result.message) {
@@ -301,10 +322,7 @@ async function deleteMoradia(moradiaId, moradiaTitulo) { // Adicionamos moradiaT
         }
         
         alert(successMessage);
-        closeModal(); // Fecha o modal após a exclusão
-
-        // Atualiza a lista e o mapa buscando os dados novamente
-        // Isso garante que a visualização esteja sincronizada com o backend
+        closeModal();
         await fetchAndDisplayListings();
 
     } catch (error) {
@@ -315,7 +333,7 @@ async function deleteMoradia(moradiaId, moradiaTitulo) { // Adicionamos moradiaT
 
 function closeModal() {
     const detailModal = document.getElementById('detailModal');
-    detailModal.style.display = 'none';
+    if (detailModal) detailModal.style.display = 'none';
 }
 
 // Event Listeners precisam ser adicionados após o DOM carregar
@@ -323,15 +341,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
     const detailModal = document.getElementById('detailModal');
-    const closeModalButton = document.querySelector('.close-button');
+    const closeModalButton = detailModal ? detailModal.querySelector('.close-button') : null;
 
-    if (searchButton) {
+    if (searchButton && searchInput) {
         searchButton.addEventListener('click', () => {
             const termo = searchInput.value;
-            fetchAndDisplayListings(termo); // Busca filtrada no backend
+            fetchAndDisplayListings(termo);
         });
-    }
-    if (searchInput) {
         searchInput.addEventListener('keypress', (event) => {
             if (event.key === 'Enter') {
                 searchButton.click();
@@ -350,9 +366,54 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // initMap será chamado pelo callback da API do Google Maps,
-    // mas se você precisar fazer algo antes (como configurar listeners que não dependem do mapa),
-    // pode fazer aqui.
-    // Se a API do Google Maps não carregar `initMap` (ex: erro de API key),
-    // a busca inicial não acontecerá.
+    // ***** ALTERAÇÃO: ATUALIZAÇÃO DA UI DE NAVEGAÇÃO *****
+    const nav = document.querySelector('header nav');
+    const token = localStorage.getItem('token');
+    const usuario = JSON.parse(localStorage.getItem('usuario'));
+
+    // Remove os links que serão adicionados dinamicamente para evitar duplicatas
+    const existingLoginLink = nav.querySelector('a[href="login.html"]');
+    if(existingLoginLink) existingLoginLink.remove();
+    
+    const existingAnnounceLink = nav.querySelector('a[href="add-listing.html"]');
+    if(existingAnnounceLink) existingAnnounceLink.remove();
+
+
+    if (token && usuario) {
+        // Usuário está LOGADO
+        // Adiciona "Anunciar Vaga"
+        const announceLink = document.createElement('a');
+        announceLink.href = 'add-listing.html';
+        announceLink.textContent = 'Anunciar Vaga';
+        nav.appendChild(announceLink);
+
+        // Adiciona "Logout"
+        const logoutButton = document.createElement('button');
+        logoutButton.textContent = `Logout (${usuario.nome})`;
+        logoutButton.id = 'logoutButton';
+        // Estilo básico para o botão parecer um link
+        logoutButton.style.background = 'none';
+        logoutButton.style.border = 'none';
+        logoutButton.style.color = 'white';
+        logoutButton.style.cursor = 'pointer';
+        logoutButton.style.fontFamily = 'inherit';
+        logoutButton.style.fontSize = '1.1rem';
+        logoutButton.style.padding = '5px 10px';
+        logoutButton.style.margin = '0 15px';
+        
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('usuario');
+            window.location.href = 'index.html'; // Redireciona para a página inicial após logout
+        });
+        nav.appendChild(logoutButton);
+
+    } else {
+        // Usuário NÃO está logado
+        // Adiciona "Login / Registrar"
+        const loginLink = document.createElement('a');
+        loginLink.href = 'login.html';
+        loginLink.textContent = 'Login / Registrar';
+        nav.appendChild(loginLink);
+    }
 });
