@@ -21,8 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("Formulário de REGISTRO enviado."); // <-- LOG 1
             const formData = new FormData(registerForm);
             const data = Object.fromEntries(formData.entries());
+            console.log("Dados de registro a serem enviados:", data); // <-- LOG 2
 
             try {
                 const response = await fetch('/api/auth/register', {
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 registerForm.reset();
 
             } catch (error) {
+                console.error("ERRO no fetch de registro:", error); // <-- LOG 3
                 showMessage(registerMessageEl, error.message, true);
             }
         });
@@ -50,8 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log("Formulário de LOGIN enviado."); // <-- LOG 4
             const formData = new FormData(loginForm);
             const data = Object.fromEntries(formData.entries());
+            console.log("Dados de login a serem enviados:", data); // <-- LOG 5
 
             try {
                 const response = await fetch('/api/auth/login', {
@@ -78,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 1000);
 
             } catch (error) {
+                console.error("ERRO no fetch de login:", error); // <-- LOG 6
                 showMessage(loginMessageEl, error.message, true);
             }
         });

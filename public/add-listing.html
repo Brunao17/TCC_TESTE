@@ -1,3 +1,5 @@
+--- START OF FILE add-listing.html ---
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,6 +27,7 @@
             <div class="form-group">
                 <label for="tipo">Tipo de Moradia:</label>
                 <select id="tipo" name="tipo" required>
+                    <option value="" disabled selected>Selecione o tipo</option>
                     <option value="republica">República</option>
                     <option value="apartamento">Apartamento</option>
                     <option value="casa">Casa</option>
@@ -37,14 +40,6 @@
             <div class="form-group">
                 <label for="universidade">Universidade(s) Próxima(s):</label>
                 <input type="text" id="universidade" name="universidade" required>
-            </div>
-            <div class="form-group">
-                <label for="latitude">Latitude (Ex: -23.550520):</label>
-                <input type="text" id="latitude" name="latitude" placeholder="Opcional, para precisão no mapa" >
-            </div>
-            <div class="form-group">
-                <label for="longitude">Longitude (Ex: -46.633308):</label>
-                <input type="text" id="longitude" name="longitude" placeholder="Opcional, para precisão no mapa" >
             </div>
             <div class="form-group">
                 <label for="preco">Preço do Aluguel (por pessoa): R$</label>
@@ -83,7 +78,6 @@
                 <input type="tel" id="contatoWhatsapp" name="contatoWhatsapp" pattern="[0-9]{12,13}" placeholder="5511912345678" required>
                  <small>Formato: código do país (55) + DDD + número.</small>
             </div>
-
             <button type="submit">Cadastrar Moradia</button>
         </form>
     </main>
@@ -92,114 +86,107 @@
         <p>© 2023 UniLar. Todos os direitos reservados.</p>
     </footer>
     <script>
-
         document.addEventListener('DOMContentLoaded', async function() {
-        // Pega o token de autenticação
-        const token = localStorage.getItem('token');
-        if (!token) {
-            alert("Você precisa estar logado para acessar esta página.");
-            window.location.href = 'login.html';
-            return;
-        }
-
-        // Elementos do formulário e da página
-        const form = document.getElementById('addListingForm');
-        const pageTitle = document.querySelector('.form-page h2');
-        const submitButton = form.querySelector('button[type="submit"]');
-
-        // Verifica se há um ID na URL (ex: ?id=9)
-        const urlParams = new URLSearchParams(window.location.search);
-        const moradiaId = urlParams.get('id');
-        const isEditMode = moradiaId !== null;
-
-        // --- LÓGICA PARA O MODO DE EDIÇÃO ---
-        if (isEditMode) {
-            pageTitle.textContent = 'Editar sua Moradia';
-            submitButton.textContent = 'Salvar Alterações';
-
-            try {
-                // Busca os dados da moradia existente para preencher o formulário
-                const response = await fetch(`/api/moradias/${moradiaId}`);
-                if (!response.ok) {
-                    throw new Error("Não foi possível carregar os dados da moradia para edição.");
-                }
-                const moradia = await response.json();
-
-                // Preenche o formulário com os dados
-                document.getElementById('titulo').value = moradia.titulo || '';
-                document.getElementById('tipo').value = moradia.tipo || '';
-                document.getElementById('endereco').value = moradia.endereco || '';
-                document.getElementById('universidade').value = moradia.universidade || '';
-                document.getElementById('latitude').value = moradia.latitude || '';
-                document.getElementById('longitude').value = moradia.longitude || '';
-                document.getElementById('preco').value = moradia.preco || '';
-                document.getElementById('pessoasTotal').value = moradia.pessoasTotal || '';
-                document.getElementById('vagasDisponiveis').value = moradia.vagasDisponiveis || '';
-                document.getElementById('distanciaFaculdade').value = moradia.distanciaFaculdade || '';
-                document.getElementById('descricao').value = moradia.descricao || '';
-                document.getElementById('fotos').value = (moradia.fotos || []).join(', ');
-                document.getElementById('comodidades').value = (moradia.comodidades || []).join(', ');
-                document.getElementById('contatoNome').value = moradia.contatoNome || '';
-                document.getElementById('contatoWhatsapp').value = moradia.contatoWhatsapp || '';
-
-            } catch (error) {
-                console.error("Erro ao buscar dados para edição:", error);
-                alert(error.message);
-                // Se der erro, volta para a página principal
-                window.location.href = 'index.html';
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("Você precisa estar logado para acessar esta página.");
+                window.location.href = 'login.html';
+                return;
             }
-        }
-        // Se não estiver em modo de edição, a página simplesmente carrega com o formulário em branco.
 
-        // --- LÓGICA DE SUBMISSÃO (PARA AMBOS OS MODOS) ---
-        form.addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            const data = Object.fromEntries(formData.entries());
+            const form = document.getElementById('addListingForm');
+            const pageTitle = document.querySelector('.form-page h2');
+            const submitButton = form.querySelector('button[type="submit"]');
 
-            // Converte strings de fotos e comodidades em arrays
-            if (data.fotos) data.fotos = data.fotos.split(',').map(item => item.trim()).filter(Boolean);
-            if (data.comodidades) data.comodidades = data.comodidades.split(',').map(item => item.trim()).filter(Boolean);
+            const urlParams = new URLSearchParams(window.location.search);
+            const moradiaId = urlParams.get('id');
+            const isEditMode = moradiaId !== null;
+
+            if (isEditMode) {
+                pageTitle.textContent = 'Editar sua Moradia';
+                submitButton.textContent = 'Salvar Alterações';
+                try {
+                    const response = await fetch(`/api/moradias/${moradiaId}`);
+                    if (!response.ok) {
+                        throw new Error("Não foi possível carregar os dados da moradia para edição.");
+                    }
+                    const moradia = await response.json();
+                    
+                    document.getElementById('titulo').value = moradia.titulo || '';
+                    document.getElementById('tipo').value = moradia.tipo || '';
+                    document.getElementById('endereco').value = moradia.endereco || '';
+                    document.getElementById('universidade').value = moradia.universidade || '';
+                    document.getElementById('preco').value = moradia.preco || '';
+                    document.getElementById('pessoasTotal').value = moradia.pessoasTotal || '';
+                    document.getElementById('vagasDisponiveis').value = moradia.vagasDisponiveis || '';
+                    document.getElementById('distanciaFaculdade').value = moradia.distanciaFaculdade || '';
+                    document.getElementById('descricao').value = moradia.descricao || '';
+                    document.getElementById('fotos').value = (moradia.fotos || []).join(', ');
+                    document.getElementById('comodidades').value = (moradia.comodidades || []).join(', ');
+                    document.getElementById('contatoNome').value = moradia.contatoNome || '';
+                    document.getElementById('contatoWhatsapp').value = moradia.contatoWhatsapp || '';
+                } catch (error) {
+                    console.error("Erro ao buscar dados para edição:", error);
+                    alert(error.message);
+                    window.location.href = 'index.html';
+                }
+            }
             
-            // Define o método e a URL da API com base no modo
-            const method = isEditMode ? 'PUT' : 'POST';
-            const apiUrl = isEditMode ? `/api/moradias/${moradiaId}` : '/api/moradias';
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                const data = Object.fromEntries(formData.entries());
+                
+                const method = isEditMode ? 'PUT' : 'POST';
+                const apiUrl = isEditMode ? `/api/moradias/${moradiaId}` : '/api/moradias';
 
-            try {
-                submitButton.disabled = true; // Desabilita o botão para evitar cliques duplos
-                submitButton.textContent = 'Salvando...';
+                try {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Salvando...';
 
-                const response = await fetch(apiUrl, {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(data),
-                });
+                    const response = await fetch(apiUrl, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(data),
+                    });
 
-                const result = await response.json();
+                    if (!response.ok) {
+                        let errorData;
+                        try {
+                            // Tenta ler o JSON de erro UMA VEZ
+                            errorData = await response.json();
+                        } catch (jsonError) {
+                            // Se não for JSON, pega o texto
+                            const errorText = await response.text();
+                            throw new Error(errorText || "Ocorreu um erro no servidor.");
+                        }
 
-                if (!response.ok) {
-                     if (response.status === 401 || response.status === 403) {
-                         alert("Sua sessão expirou ou é inválida. Por favor, faça login novamente.");
-                         window.location.href = 'login.html';
-                     }
-                    throw new Error(result.message || `Erro ao salvar moradia.`);
+                        if (response.status === 401 || response.status === 403) {
+                            alert("Sua sessão expirou ou é inválida. Por favor, faça login novamente.");
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('usuario');
+                            window.location.href = 'login.html';
+                            return;
+                        }
+                        throw new Error(errorData.message || `Erro ao salvar moradia.`);
+                    }
+
+                    const result = await response.json();
+                    alert(result.message);
+                    window.location.href = 'index.html';
+
+                } catch (error) {
+                    console.error("Erro ao submeter formulário:", error);
+                    alert(error.message);
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = isEditMode ? 'Salvar Alterações' : 'Cadastrar Moradia';
                 }
-
-                alert(result.message);
-                window.location.href = 'index.html'; // Redireciona para a página principal após sucesso
-
-            } catch (error) {
-                console.error("Erro ao submeter formulário:", error);
-                alert(error.message);
-            } finally {
-                submitButton.disabled = false; // Reabilita o botão
-                submitButton.textContent = isEditMode ? 'Salvar Alterações' : 'Cadastrar Moradia';
-            }
+            });
         });
-    });
     </script>
 </body>
 </html>
