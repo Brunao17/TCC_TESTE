@@ -96,7 +96,9 @@ const mapToCamelCase = (m) => ({
     comodidades: m.comodidades || [],
     contatoNome: m.contato_nome,
     contatoWhatsapp: m.contato_whatsapp,
-    usuario_id: m.usuario_id
+    usuario_id: m.usuario_id,
+    pontuacao: m.pontuacao, // Inclui a pontuação, se existir
+    distanciaCalculada: m.distanciaCalculada // Inclui a distância calculada, se existir
 });
 
 // ===================================
@@ -196,34 +198,96 @@ app.post('/api/moradias/recomendar', async (req, res) => {
     const preferencias = req.body;
     try {
         const result = await pool.query('SELECT * FROM moradias');
-        let moradias = result.rows;
+        let todasMoradias = result.rows;
 
-        let moradiasFiltradas = moradias.filter(moradia => {
+        // Pré-calcular a distância de todas as moradias em relação à universidade de referência
+        if (preferencias.universidade && preferencias.universidade.lat) {
+            todasMoradias.forEach(moradia => {
+                moradia.distanciaCalculada = calcularDistancia(
+                    moradia.latitude, moradia.longitude,
+                    preferencias.universidade.lat, preferencias.universidade.lng
+                );
+            });
+        }
+
+        // =================================================================
+        //       FASE 1: FILTRAGEM RÍGIDA
+        // =================================================================
+        const moradiasFiltradas = todasMoradias.filter(moradia => {
+            // Se uma universidade foi buscada, filtra por uma distância máxima de sanidade (50km)
+            // e remove qualquer moradia que não tenha coordenadas
+            if (preferencias.universidade && preferencias.universidade.lat) {
+                if (moradia.distanciaCalculada === null || moradia.distanciaCalculada > 50) return false;
+            }
+            // Filtra pela distância máxima especificada pelo usuário, se houver
+            if (preferencias.distanciaMax && (moradia.distanciaCalculada > preferencias.distanciaMax)) return false;
+            
             if (preferencias.precoMax && moradia.preco > preferencias.precoMax) return false;
-            if (preferencias.distanciaMax && preferencias.universidade) {
-                const distancia = calcularDistancia(moradia.latitude, moradia.longitude, preferencias.universidade.lat, preferencias.universidade.lng);
-                moradia.distanciaCalculada = distancia; 
-                if (distancia === null || distancia > preferencias.distanciaMax) return false;
+            if (preferencias.tipos && preferencias.tipos.length > 0 && !preferencias.tipos.includes(moradia.tipo)) return false;
+            if (preferencias.comodidades && preferencias.comodidades.length > 0) {
+                if (!preferencias.comodidades.every(c => moradia.comodidades && moradia.comodidades.includes(c))) return false;
             }
             return true;
         });
 
+        if (moradiasFiltradas.length === 0) {
+            return res.json([]);
+        }
+
+        // =================================================================
+        //       FASE 2: PONTUAÇÃO E ORDENAÇÃO (LÓGICA FINAL)
+        // =================================================================
+
+        // Encontra os valores min/max APENAS entre as moradias que passaram no filtro
+        const precos = moradiasFiltradas.map(m => m.preco);
+        const precoMin = Math.min(...precos);
+        const precoMax = Math.max(...precos);
+        const faixaPreco = precoMax - precoMin;
+
+        const distancias = moradiasFiltradas.map(m => m.distanciaCalculada).filter(d => d !== null);
+        const distMin = Math.min(...distancias);
+        const distMax = Math.max(...distancias);
+        const faixaDist = distMax - distMin;
+
         const moradiasPontuadas = moradiasFiltradas.map(moradia => {
             let pontuacao = 0;
-            const pesos = preferencias.pesos || { preco: 1, comodidades: 1, tipo: 1, distancia: 1 };
-            if (preferencias.tipos && preferencias.tipos.length > 0 && preferencias.tipos.includes(moradia.tipo)) {
-                pontuacao += 10 * pesos.tipo;
+            const pesos = preferencias.pesos || { preco: 1, distancia: 1, comodidades: 1 };
+            
+            // --- Pontuação de Preço Normalizada (0-100) ---
+            let pontuacaoPreco = 0;
+            if (faixaPreco > 0) {
+                // Inverte a pontuação: preço menor = pontuação maior
+                pontuacaoPreco = (1 - ((moradia.preco - precoMin) / faixaPreco)) * 100;
+            } else if (moradiasFiltradas.length > 0) {
+                pontuacaoPreco = 100; // Se todos os preços são iguais, todos ganham 100
             }
-            if (preferencias.comodidades && moradia.comodidades) {
-                const comodidadesMatch = moradia.comodidades.filter(c => preferencias.comodidades.includes(c)).length;
-                pontuacao += (comodidadesMatch * 5) * pesos.comodidades;
+            pontuacao += pontuacaoPreco * pesos.preco;
+
+            // --- Pontuação de Distância Normalizada (0-100) ---
+            let pontuacaoDistancia = 0;
+            if (faixaDist > 0 && moradia.distanciaCalculada != null) {
+                // Inverte a pontuação: distância menor = pontuação maior
+                pontuacaoDistancia = (1 - ((moradia.distanciaCalculada - distMin) / faixaDist)) * 100;
+            } else if (distancias.length > 0) {
+                pontuacaoDistancia = 100; // Se todas as distâncias são iguais, todos ganham 100
             }
+            pontuacao += pontuacaoDistancia * pesos.distancia;
+            
+            // --- Pontuação por Comodidades (Bônus) ---
+            if (moradia.comodidades) {
+                pontuacao += (moradia.comodidades.length * 5) * pesos.comodidades;
+            }
+
             moradia.pontuacao = pontuacao;
             return moradia;
         });
 
+        // Ordenação final
         moradiasPontuadas.sort((a, b) => b.pontuacao - a.pontuacao);
+        
+        console.log("Moradias RECOMENDADAS (FINAL):", moradiasPontuadas.map(m => ({ titulo: m.titulo, pontuacao: m.pontuacao, preco: m.preco, distancia: m.distanciaCalculada })));
         res.json(moradiasPontuadas.map(mapToCamelCase));
+
     } catch (error) {
         console.error("Erro no sistema de recomendação:", error);
         res.status(500).json({ message: "Erro ao gerar recomendações." });
@@ -249,8 +313,8 @@ app.post('/api/moradias', autenticarToken, async (req, res) => {
             INSERT INTO moradias (titulo, tipo, endereco, universidade, latitude, longitude, preco, pessoas_total, vagas_disponiveis, distancia_faculdade, descricao, fotos, comodidades, contato_nome, contato_whatsapp, usuario_id, universidade_lat, universidade_lng)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18) RETURNING *;
         `;
-        const fotosArray = (fotos && typeof fotos === 'string' && fotos.trim() !== '') ? fotos.split(',').map(item => item.trim()) : [];
-        const comodidadesArray = (comodidades && typeof comodidades === 'string' && comodidades.trim() !== '') ? comodidades.split(',').map(item => item.trim()) : [];
+        const fotosArray = (typeof fotos === 'string' && fotos.trim() !== '') ? fotos.split(',').map(item => item.trim()).filter(Boolean) : [];
+        const comodidadesArray = (typeof comodidades === 'string' && comodidades.trim() !== '') ? comodidades.split(',').map(item => item.trim()).filter(Boolean) : [];
         const values = [titulo, tipo, endereco, universidade, moradiaCoords.lat, moradiaCoords.lng, preco, pessoasTotal, vagasDisponiveis, distanciaFaculdade, descricao, fotosArray, comodidadesArray, contatoNome, contatoWhatsapp, usuarioId, uniCoords ? uniCoords.lat : null, uniCoords ? uniCoords.lng : null];
         const result = await pool.query(queryText, values);
         res.status(201).json({ message: "Moradia cadastrada com sucesso!", moradia: result.rows[0] });
@@ -262,13 +326,13 @@ app.post('/api/moradias', autenticarToken, async (req, res) => {
 
 app.put('/api/moradias/:id', autenticarToken, async (req, res) => {
     const { id: moradiaId } = req.params;
-    const { id: usuarioId } = req.usuario;
+    const { id: usuarioId, role } = req.usuario;
     const dados = req.body;
     try {
         const findResult = await pool.query('SELECT * FROM moradias WHERE id = $1;', [moradiaId]);
         if (findResult.rowCount === 0) return res.status(404).json({ message: "Moradia não encontrada." });
         const moradiaAtual = findResult.rows[0];
-        if (moradiaAtual.usuario_id !== usuarioId && req.usuario.role !== 'admin') return res.status(403).json({ message: "Você não tem permissão para editar esta moradia." });
+        if (moradiaAtual.usuario_id !== usuarioId && role !== 'admin') return res.status(403).json({ message: "Você não tem permissão para editar esta moradia." });
         
         let latitude = moradiaAtual.latitude;
         let longitude = moradiaAtual.longitude;
@@ -306,8 +370,7 @@ app.delete('/api/moradias/:id', autenticarToken, async (req, res) => {
     const { id: moradiaId } = req.params;
     const usuarioLogado = req.usuario;
     try {
-        const findQuery = 'SELECT usuario_id, titulo FROM moradias WHERE id = $1;';
-        const findResult = await pool.query(findQuery, [parseInt(moradiaId)]);
+        const findResult = await pool.query('SELECT usuario_id, titulo FROM moradias WHERE id = $1;', [parseInt(moradiaId)]);
         if (findResult.rowCount === 0) return res.status(404).json({ message: "Moradia não encontrada." });
         const donoDaMoradiaId = findResult.rows[0].usuario_id;
 

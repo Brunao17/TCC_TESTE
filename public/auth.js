@@ -1,30 +1,26 @@
-// public/auth.js
-
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const loginMessageEl = document.getElementById('loginMessage');
     const registerMessageEl = document.getElementById('registerMessage');
 
-    // Função para exibir mensagens
+    // Função para exibir mensagens nos formulários
     function showMessage(element, message, isError = false) {
+        if (!element) return;
         element.textContent = message;
-        element.className = 'form-message'; // Limpa classes antigas
-        if (isError) {
-            element.classList.add('error');
-        } else {
-            element.classList.add('success');
-        }
+        element.className = 'form-message'; // Limpa classes
+        element.classList.add(isError ? 'error' : 'success');
     }
 
     // Event Listener para o formulário de REGISTRO
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log("Formulário de REGISTRO enviado."); // <-- LOG 1
+            const submitButton = registerForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
             const formData = new FormData(registerForm);
             const data = Object.fromEntries(formData.entries());
-            console.log("Dados de registro a serem enviados:", data); // <-- LOG 2
 
             try {
                 const response = await fetch('/api/auth/register', {
@@ -34,7 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
-
                 if (!response.ok) {
                     throw new Error(result.message || 'Erro ao registrar.');
                 }
@@ -43,8 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 registerForm.reset();
 
             } catch (error) {
-                console.error("ERRO no fetch de registro:", error); // <-- LOG 3
                 showMessage(registerMessageEl, error.message, true);
+            } finally {
+                submitButton.disabled = false;
             }
         });
     }
@@ -53,10 +49,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log("Formulário de LOGIN enviado."); // <-- LOG 4
+            const submitButton = loginForm.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+
             const formData = new FormData(loginForm);
             const data = Object.fromEntries(formData.entries());
-            console.log("Dados de login a serem enviados:", data); // <-- LOG 5
 
             try {
                 const response = await fetch('/api/auth/login', {
@@ -66,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const result = await response.json();
-
                 if (!response.ok) {
                     throw new Error(result.message || 'Erro no login.');
                 }
@@ -77,14 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 showMessage(loginMessageEl, result.message);
 
-                // Redireciona para a página de anunciar vaga ou principal após 1 segundo
+                // Redireciona para a página principal após 1 segundo
                 setTimeout(() => {
-                    window.location.href = 'add-listing.html';
+                    window.location.href = 'index.html';
                 }, 1000);
 
             } catch (error) {
-                console.error("ERRO no fetch de login:", error); // <-- LOG 6
                 showMessage(loginMessageEl, error.message, true);
+            } finally {
+                submitButton.disabled = false;
             }
         });
     }

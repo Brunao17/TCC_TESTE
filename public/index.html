@@ -57,23 +57,39 @@
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <h2>Definir Preferências de Busca</h2>
-            <form id="preferencesForm">
+                <form id="preferencesForm">
                 <div class="form-group">
                     <label for="prefUniversidade">Universidade de Referência:</label>
                     <input type="text" id="prefUniversidade" name="universidade" placeholder="Ex: Universidade de São Paulo" required>
                 </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <!-- Seção de Distância -->
                 <div class="form-group">
-                    <label>Importância da Distância (0=Não importa, 5=Máxima)</label>
-                    <input type="range" name="pesoDistancia" min="0" max="5" value="3" style="width: 100%;">
+                    <label for="pesoDistancia">Importância da Distância (0=Não importa, 5=Máxima)</label>
+                    <input type="range" id="pesoDistancia" name="pesoDistancia" min="0" max="5" value="3" style="width: 100%;">
                 </div>
                 <div class="form-group">
-                    <label for="distanciaMax">Distância Máxima (em km):</label>
+                    <label for="distanciaMax">Distância Máxima da Universidade (em km):</label>
                     <input type="number" id="distanciaMax" name="distanciaMax" step="0.5" placeholder="Ex: 2.5">
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <!-- Seção de Preço -->
+                <div class="form-group">
+                    <label for="pesoPreco">Importância do Preço (0=Não importa, 5=Máxima)</label>
+                    <input type="range" id="pesoPreco" name="pesoPreco" min="0" max="5" value="3" style="width: 100%;">
                 </div>
                 <div class="form-group">
                     <label for="precoMax">Preço Máximo do Aluguel (por pessoa): R$</label>
                     <input type="number" id="precoMax" name="precoMax" step="50" placeholder="Ex: 800">
                 </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                
+                <!-- Seção de Tipo -->
                 <div class="form-group">
                     <label>Tipo de Moradia:</label>
                     <div class="checkbox-group">
@@ -82,13 +98,25 @@
                         <label><input type="checkbox" name="tipos" value="casa"> Casa</label>
                     </div>
                 </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <!-- Seção de Comodidades -->
+                <div class="form-group">
+                    <label for="pesoComodidades">Importância das Comodidades (0=Não importa, 5=Máxima)</label>
+                    <input type="range" id="pesoComodidades" name="pesoComodidades" min="0" max="5" value="2" style="width: 100%;">
+                </div>
                 <div class="form-group">
                     <label>Comodidades Essenciais:</label>
                     <div class="checkbox-group">
                         <label><input type="checkbox" name="comodidades" value="Wi-Fi"> Wi-Fi</label>
                         <label><input type="checkbox" name="comodidades" value="Mobiliado"> Mobiliado</label>
+                        <label><input type="checkbox" name="comodidades" value="Garagem"> Garagem</label>
+                        <label><input type="checkbox" name="comodidades" value="Permite Pets"> Permite Pets</label>
+                        <label><input type="checkbox" name="comodidades" value="Cozinha Equipada"> Cozinha Equipada</label>
                     </div>
                 </div>
+                
                 <button type="submit">Encontrar Moradias Recomendadas</button>
             </form>
         </div>

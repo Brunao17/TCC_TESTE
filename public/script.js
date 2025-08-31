@@ -60,43 +60,41 @@ function displayListingsOnMapAndList(listings) {
     if (!listingsContainer) return;
 
     clearMarkers();
-    listingsContainer.innerHTML = '<h2>Moradias Disponíveis</h2>';
+    listingsContainer.innerHTML = '<h2>Moradias Recomendadas</h2>'; // Título mais específico
 
     if (!listings || listings.length === 0) {
-        listingsContainer.innerHTML += '<p>Nenhuma moradia encontrada.</p>';
+        listingsContainer.innerHTML += '<p>Nenhuma moradia encontrada com seus critérios.</p>';
         return;
     }
 
     const bounds = new google.maps.LatLngBounds();
 
-    listings.forEach(moradia => {
+    // Cria uma cópia para garantir que a iteração não seja afetada por referências externas
+    const listingsCopy = [...listings];
+
+    listingsCopy.forEach(moradia => {
+        // Marcadores no mapa
         if (moradia.latitude && moradia.longitude) {
             const position = { lat: moradia.latitude, lng: moradia.longitude };
-            const marker = new google.maps.Marker({
-                position: position,
-                map: map,
-                title: moradia.titulo,
-            });
-
+            const marker = new google.maps.Marker({ position, map, title: moradia.titulo });
             marker.addListener('click', () => {
                 const content = `<div><h4>${moradia.titulo}</h4><p>R$ ${Number(moradia.preco).toFixed(2)}</p><button onclick='openDetailModalById(${moradia.id})'>Ver Detalhes</button></div>`;
                 gInfoWindow.setContent(content);
                 gInfoWindow.open(map, marker);
-                map.panTo(marker.getPosition());
             });
             gMarkers.push(marker);
             bounds.extend(position);
         }
 
+        // Cards na lista
         const card = document.createElement('div');
         card.classList.add('listing-card');
         card.innerHTML = `
             <h3>${moradia.titulo}</h3>
             <img src="${moradia.fotos && moradia.fotos.length > 0 ? moradia.fotos[0] : 'https://via.placeholder.com/100x70.png?text=Sem+Foto'}" alt="Foto de ${moradia.titulo}" style="width:100px; height:auto; float:left; margin-right:10px; border-radius:4px;">
-            <p><strong>Tipo:</strong> ${moradia.tipo}</p>
-            <p><strong>Preço:</strong> <span class="price">R$ ${Number(moradia.preco).toFixed(2)}</span> / mês</p>
-            <p><strong>Vagas:</strong> ${moradia.vagasDisponiveis} de ${moradia.pessoasTotal}</p>
-            <p><strong>Próximo a:</strong> ${moradia.universidade}</p>
+            <p><strong>Preço:</strong> <span class="price">R$ ${Number(moradia.preco).toFixed(2)}</span></p>
+            <p><strong>Distância:</strong> ${moradia.distanciaCalculada ? moradia.distanciaCalculada.toFixed(2) + ' km' : 'N/A'}</p>
+            <p style="color: blue; font-weight: bold;"><strong>Pontuação:</strong> ${moradia.pontuacao ? moradia.pontuacao.toFixed(2) : 'N/A'}</p>
             <div style="clear:both;"></div>
         `;
         card.addEventListener('click', () => showDetailModal(moradia));
@@ -105,9 +103,7 @@ function displayListingsOnMapAndList(listings) {
 
     if (gMarkers.length > 0 && !bounds.isEmpty()) {
         map.fitBounds(bounds);
-        if (gMarkers.length === 1) {
-            map.setZoom(15);
-        }
+        if (gMarkers.length === 1) map.setZoom(15);
     }
 }
 
@@ -309,7 +305,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     precoMax: parseFloat(formData.get('precoMax')) || null,
                     tipos: formData.getAll('tipos'),
                     comodidades: formData.getAll('comodidades'),
-                    pesos: { distancia: parseInt(formData.get('pesoDistancia')) || 1 }
+                    pesos: { 
+                        distancia: parseInt(formData.get('pesoDistancia')) || 1,
+                        preco: parseInt(formData.get('pesoPreco')) || 1,
+                        comodidades: parseInt(formData.get('pesoComodidades')) || 1,
+                        tipo: 1
+                    }
                 };
                 
                 const recResponse = await fetch('/api/moradias/recomendar', {
@@ -322,8 +323,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(errorData.message || "Erro ao buscar recomendações.");
                 }
 
-                allMoradias = await recResponse.json();
-                displayListingsOnMapAndList(allMoradias);
+                const moradiasRecomendadas = await recResponse.json();
+                console.log("--- DADOS RECEBIDOS DO ENDPOINT /recomendar ---");
+                console.log("Número de moradias recebidas:", moradiasRecomendadas.length);
+                console.log("Array completo recebido:", moradiasRecomendadas);
+                allMoradias = moradiasRecomendadas;
+                displayListingsOnMapAndList(moradiasRecomendadas);
+
                 
                 if (map) {
                      map.panTo(geoResult.centroDoMapa);
